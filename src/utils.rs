@@ -77,9 +77,8 @@ pub fn print_rows(rows: Vec<Row>, theme: Theme) {
     println!("");
     for row in rows.iter() {
         let file_name = &row.file_name;
-        let file_name_len = file_name.len();
 
-        if file_name_len > 35 {
+        if file_name.len() > 35 {
             let mut file_name = file_name[0..30].to_string();
             file_name.push_str("...  ")
         }
@@ -134,7 +133,7 @@ pub fn print_rows(rows: Vec<Row>, theme: Theme) {
         };
 
         println!(
-            "{}{} {}{: <30} {}{: <50} {}{}",
+            "{}{} {}{: <30} {}{: <50} {}{: >14}",
             icon_color,
             icon,
             file_name_color,
