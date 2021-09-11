@@ -68,7 +68,8 @@ pub fn get_theme(theme: String) -> Theme {
         "light" => Theme::Light,
         "dark" => Theme::Dark,
         "contrast" => Theme::Contrast,
-        _ => Theme::Dimm,
+        "dimm" => Theme::Dimm,
+        _ => Theme::Default,
     }
 }
 
@@ -122,6 +123,13 @@ pub fn print_rows(rows: Vec<Row>, theme: Theme) {
                 file_name_color = "\x1B[38;2;240;243;246m";
                 summary_color = "\x1B[38;2;240;243;246m";
                 time_since_color = "\x1B[38;2;240;243;246m";
+            }
+
+            Theme::Default => {
+                icon_color = "";
+                file_name_color = "";
+                summary_color = "";
+                time_since_color = "";
             }
         };
 

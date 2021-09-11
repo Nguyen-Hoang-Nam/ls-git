@@ -9,6 +9,7 @@ pub enum Theme {
     Dark,
     Dimm,
     Contrast,
+    Default,
 }
 
 #[derive(Clone)]

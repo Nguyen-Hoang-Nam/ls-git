@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .arg(Arg::with_name("INPUT").help("Relative path").index(1))
         .get_matches();
 
-    let theme = get_theme(matches.value_of("theme").unwrap_or("dimm").to_string());
+    let theme = get_theme(matches.value_of("theme").unwrap_or("").to_string());
 
     let directory = matches.value_of("INPUT").unwrap_or(".");
     let directory_path = PathBuf::from(directory).canonicalize()?;
