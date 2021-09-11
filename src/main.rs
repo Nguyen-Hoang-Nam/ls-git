@@ -6,9 +6,16 @@ use std::{
 };
 
 #[derive(Clone)]
+enum FileType {
+    File,
+    Directory,
+}
+
+#[derive(Clone)]
 struct LastCommit {
     summary: String,
     time: i64,
+    file_type: FileType,
 }
 
 fn main() -> Result<(), Error> {
@@ -48,15 +55,14 @@ fn main() -> Result<(), Error> {
 
                 let file_path_components = file_path_str.split('/').collect::<Vec<&str>>();
 
+                let file_type;
                 let file_path_decorate;
                 if file_path_components.len() > 1 {
-                    file_path_decorate = format!("  {}", &file_path_components[0]);
-                    // file_path_decorate
-                    //     .to_string()
-                    //     .push_str(&file_path_components[0]);
+                    file_path_decorate = &file_path_components[0];
+                    file_type = FileType::Directory;
                 } else {
-                    file_path_decorate = format!("  {}", &file_path_str);
-                    // file_path_decorate.to_string().push_str(&file_path_str);
+                    file_path_decorate = &file_path_str;
+                    file_type = FileType::File;
                 }
 
                 let file_mod_time = commit.time();
@@ -66,10 +72,36 @@ fn main() -> Result<(), Error> {
                 let last_commit = LastCommit {
                     summary: summary.unwrap().to_string(),
                     time: unix_time,
+                    file_type,
                 };
 
                 mtimes
                     .entry(file_path_decorate.to_string())
+                    // .and_modify(|t| {
+                    //     *t = if t.time < unix_time {
+                    //         last_commit.clone()
+                    //     } else {
+                    //         t.clone()
+                    //     }
+                    // })
+                    .or_insert(last_commit);
+            }
+        } else if commit.parent_count() == 0 {
+            let tree = commit.tree()?;
+
+            for entry in tree.iter() {
+                let file_mod_time = commit.time();
+                let summary = commit.summary();
+                let unix_time = file_mod_time.seconds();
+
+                let last_commit = LastCommit {
+                    summary: summary.unwrap().to_string(),
+                    time: unix_time,
+                    file_type: FileType::File,
+                };
+
+                mtimes
+                    .entry(entry.name().unwrap().to_string())
                     // .and_modify(|t| {
                     //     *t = if t.time < unix_time {
                     //         last_commit.clone()
