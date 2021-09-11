@@ -2,6 +2,7 @@ use clap::{App, Arg};
 use git2::{Error, Repository};
 use std::{
     collections::HashMap,
+    fs,
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -175,7 +176,25 @@ fn main() -> Result<(), Error> {
         }
     }
 
-    let rows = sort_file(mtimes);
+    let mut current_files: HashMap<String, LastCommit> = HashMap::new();
+
+    let paths = fs::read_dir(directory).unwrap();
+    for path in paths {
+        let name = path
+            .unwrap()
+            .path()
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+
+        if name != ".git" {
+            current_files.insert(name.to_string(), mtimes.get(&name).unwrap().to_owned());
+        }
+    }
+
+    let rows = sort_file(current_files);
     for row in rows.iter() {
         let file_name = &row.file_name;
         let file_name_len = file_name.len();
