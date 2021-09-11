@@ -76,6 +76,9 @@ pub fn print_rows(rows: Vec<Row>) {
             file_name.push_str("...  ")
         }
 
-        println!("{: <30} {: <50} {}", file_name, row.summary, row.time_since);
+        println!(
+            "\x1B[38;2;173;186;199m{: <30} \x1B[38;2;118;131;144m{: <50} \x1B[38;2;118;131;144m{}",
+            file_name, row.summary, row.time_since
+        );
     }
 }
