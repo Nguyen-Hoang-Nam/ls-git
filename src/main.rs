@@ -1,6 +1,9 @@
 use clap::{App, Arg};
 use git2::{Error, Repository};
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 #[derive(Clone)]
 struct LastCommit {
@@ -79,8 +82,30 @@ fn main() -> Result<(), Error> {
         }
     }
 
+    let mut time_since_last_commit;
     for (path, last_commit) in mtimes.iter() {
-        println!("{} {} {}", path, last_commit.summary, last_commit.time);
+        let since_last_commit = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            - (last_commit.time as u64);
+
+        if since_last_commit < 60 {
+            time_since_last_commit = format!("{} seconds ago", since_last_commit);
+        } else if since_last_commit < 3600 {
+            time_since_last_commit = format!("{} minutes ago", since_last_commit / 60);
+        } else if since_last_commit < 86400 {
+            time_since_last_commit = format!("{} hours ago", since_last_commit / 3600);
+        } else if since_last_commit < 2678400 {
+            time_since_last_commit = format!("{} days ago", since_last_commit / 86400);
+        } else {
+            time_since_last_commit = format!("{} months ago", since_last_commit / 2678400);
+        }
+
+        println!(
+            "{} {} {}",
+            path, last_commit.summary, time_since_last_commit
+        );
     }
 
     Ok(())
