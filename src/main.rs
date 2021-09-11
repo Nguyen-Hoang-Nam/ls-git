@@ -5,15 +5,24 @@ use clap::{App, Arg};
 use git2::Repository;
 use model::{FileType, LastCommit};
 use std::{collections::HashMap, fs, path::PathBuf};
-use utils::{print_rows, sort_file};
+use utils::{get_theme, print_rows, sort_file};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = App::new("ls-git")
         .version("1.0.0")
         .author("N.H Nam <nguyenhoangnam.dev@gmail.com>")
         .about("View last commit and date")
+        .arg(
+            Arg::with_name("theme")
+                .short("t")
+                .long("theme")
+                .help("Change theme")
+                .takes_value(true),
+        )
         .arg(Arg::with_name("INPUT").help("Relative path").index(1))
         .get_matches();
+
+    let theme = get_theme(matches.value_of("theme").unwrap_or("dimm").to_string());
 
     let directory = matches.value_of("INPUT").unwrap_or(".");
     let directory_path = PathBuf::from(directory).canonicalize()?;
@@ -131,7 +140,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let rows = sort_file(current_files)?;
-    print_rows(rows);
+    print_rows(rows, theme);
 
     Ok(())
 }

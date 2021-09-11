@@ -4,6 +4,13 @@ pub enum FileType {
     Directory,
 }
 
+pub enum Theme {
+    Light,
+    Dark,
+    Dimm,
+    Contrast,
+}
+
 #[derive(Clone)]
 pub struct LastCommit {
     pub summary: String,
@@ -12,6 +19,7 @@ pub struct LastCommit {
 }
 
 pub struct Row {
+    pub file_type: FileType,
     pub file_name: String,
     pub time_since: String,
     pub summary: String,
