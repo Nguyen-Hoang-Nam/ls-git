@@ -2,6 +2,8 @@
 
 List files with summary and the time since the last commit.
 
+![Screenshot](https://raw.githubusercontent.com/Nguyen-Hoang-Nam/readme-image/main/ls-git/screenshot.jpg)
+
 ## Installation
 
 The best way to install is you already have Rust, and you build release with `cargo build --release`, then copying the binary to `~/.local/bin`.
