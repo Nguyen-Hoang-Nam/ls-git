@@ -5,7 +5,7 @@ use clap::{App, Arg};
 use git2::Repository;
 use model::{FileType, LastCommit};
 use std::{collections::HashMap, fs};
-use utils::sort_file;
+use utils::{print_rows, sort_file};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = App::new("ls-git")
@@ -112,25 +112,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .to_string();
 
         if name != ".git" {
-            current_files.insert(
-                name.to_string(),
-                path_and_last_commit.get(&name).unwrap().to_owned(),
-            );
+            match path_and_last_commit.get(&name) {
+                Some(value) => {
+                    current_files.insert(name.to_string(), value.to_owned());
+                }
+                None => {}
+            }
         }
     }
 
     let rows = sort_file(current_files)?;
-    for row in rows.iter() {
-        let file_name = &row.file_name;
-        let file_name_len = file_name.len();
-
-        if file_name_len > 35 {
-            let mut file_name = file_name[0..30].to_string();
-            file_name.push_str("...  ")
-        }
-
-        println!("{: <30} {: <50} {}", file_name, row.summary, row.time_since);
-    }
+    print_rows(rows);
 
     Ok(())
 }
