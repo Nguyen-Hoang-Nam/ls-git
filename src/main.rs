@@ -2,12 +2,12 @@ mod model;
 mod utils;
 
 use clap::{App, Arg};
-use git2::{Error, Repository};
+use git2::Repository;
 use model::{FileType, LastCommit};
 use std::{collections::HashMap, fs};
 use utils::sort_file;
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = App::new("ls-git")
         .version("1.0.0")
         .author("N.H Nam <nguyenhoangnam.dev@gmail.com>")
@@ -30,7 +30,7 @@ fn main() -> Result<(), Error> {
 
         if commit.parent_count() == 1 {
             let tree = commit.tree()?;
-            let prev_tree = commit.parent(0).unwrap().tree().unwrap();
+            let prev_tree = commit.parent(0)?.tree()?;
 
             let diff = repository.diff_tree_to_tree(Some(&prev_tree), Some(&tree), None)?;
 
@@ -101,10 +101,9 @@ fn main() -> Result<(), Error> {
 
     let mut current_files: HashMap<String, LastCommit> = HashMap::new();
 
-    let paths = fs::read_dir(directory).unwrap();
+    let paths = fs::read_dir(directory)?;
     for path in paths {
-        let name = path
-            .unwrap()
+        let name = path?
             .path()
             .file_name()
             .unwrap()
@@ -120,7 +119,7 @@ fn main() -> Result<(), Error> {
         }
     }
 
-    let rows = sort_file(current_files);
+    let rows = sort_file(current_files)?;
     for row in rows.iter() {
         let file_name = &row.file_name;
         let file_name_len = file_name.len();
