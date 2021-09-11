@@ -1,84 +1,11 @@
+mod model;
+mod utils;
+
 use clap::{App, Arg};
 use git2::{Error, Repository};
-use std::{
-    collections::HashMap,
-    fs,
-    time::{SystemTime, UNIX_EPOCH},
-};
-
-#[derive(Clone)]
-enum FileType {
-    File,
-    Directory,
-}
-
-#[derive(Clone)]
-struct LastCommit {
-    summary: String,
-    time: i64,
-    file_type: FileType,
-}
-
-struct Row {
-    file_name: String,
-    time_since: String,
-    summary: String,
-}
-
-fn duration_to_time_since(duration: u64) -> String {
-    let time_since;
-    if duration < 60 {
-        time_since = format!("{} seconds ago", duration);
-    } else if duration < 3600 {
-        time_since = format!("{} minutes ago", duration / 60);
-    } else if duration < 86400 {
-        time_since = format!("{} hours ago", duration / 3600);
-    } else if duration < 2678400 {
-        time_since = format!("{} days ago", duration / 86400);
-    } else {
-        time_since = format!("{} months ago", duration / 2678400);
-    }
-
-    return time_since;
-}
-
-fn sort_file(unorder_files: HashMap<String, LastCommit>) -> Vec<Row> {
-    let mut directory_rows: Vec<Row> = Vec::new();
-    let mut file_rows: Vec<Row> = Vec::new();
-
-    let current_time = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-
-    for (path, last_commit) in unorder_files.iter() {
-        let since_last_commit = current_time - (last_commit.time as u64);
-        let time_since = duration_to_time_since(since_last_commit);
-
-        let file_name = match last_commit.file_type {
-            FileType::File => format!(" {}", path),
-            FileType::Directory => format!(" {}", path),
-        };
-
-        let row = Row {
-            file_name,
-            time_since,
-            summary: last_commit.clone().summary,
-        };
-
-        match last_commit.file_type {
-            FileType::File => file_rows.push(row),
-            FileType::Directory => directory_rows.push(row),
-        };
-    }
-
-    directory_rows.sort_by(|a, b| a.file_name.cmp(&b.file_name));
-    file_rows.sort_by(|a, b| a.file_name.cmp(&b.file_name));
-
-    directory_rows.extend(file_rows);
-
-    return directory_rows;
-}
+use model::{FileType, LastCommit};
+use std::{collections::HashMap, fs};
+use utils::sort_file;
 
 fn main() -> Result<(), Error> {
     let matches = App::new("ls-git")
@@ -90,26 +17,22 @@ fn main() -> Result<(), Error> {
 
     let directory = matches.value_of("INPUT").unwrap_or(".");
 
-    let mut mtimes: HashMap<String, LastCommit> = HashMap::new();
+    let mut path_and_last_commit: HashMap<String, LastCommit> = HashMap::new();
 
-    let repo = Repository::discover(directory)?;
-    let mut revwalk = repo.revwalk()?;
+    let repository = Repository::discover(directory)?;
+    let mut revwalk = repository.revwalk()?;
 
     revwalk.set_sorting(git2::Sort::TIME)?;
     revwalk.push_head()?;
     for commit_id in revwalk {
         let commit_id = commit_id?;
-        let commit = repo.find_commit(commit_id)?;
+        let commit = repository.find_commit(commit_id)?;
 
-        // Ignore merge commits (2+ parents) because that's what 'git whatchanged' does.
-        // Ignore commit with 0 parents (initial commit) because there's nothing to diff against
         if commit.parent_count() == 1 {
             let tree = commit.tree()?;
+            let prev_tree = commit.parent(0).unwrap().tree().unwrap();
 
-            let prev_commit = commit.parent(0)?;
-            let prev_tree = prev_commit.tree()?;
-
-            let diff = repo.diff_tree_to_tree(Some(&prev_tree), Some(&tree), None)?;
+            let diff = repository.diff_tree_to_tree(Some(&prev_tree), Some(&tree), None)?;
 
             for delta in diff.deltas() {
                 let file_path = delta.new_file().path().unwrap();
@@ -137,7 +60,7 @@ fn main() -> Result<(), Error> {
                     file_type,
                 };
 
-                mtimes
+                path_and_last_commit
                     .entry(file_path_decorate.to_string())
                     // .and_modify(|t| {
                     //     *t = if t.time < unix_time {
@@ -162,7 +85,7 @@ fn main() -> Result<(), Error> {
                     file_type: FileType::File,
                 };
 
-                mtimes
+                path_and_last_commit
                     .entry(entry.name().unwrap().to_string())
                     // .and_modify(|t| {
                     //     *t = if t.time < unix_time {
@@ -190,7 +113,10 @@ fn main() -> Result<(), Error> {
             .to_string();
 
         if name != ".git" {
-            current_files.insert(name.to_string(), mtimes.get(&name).unwrap().to_owned());
+            current_files.insert(
+                name.to_string(),
+                path_and_last_commit.get(&name).unwrap().to_owned(),
+            );
         }
     }
 
