@@ -7,4 +7,4 @@ edition = "2018"
 
 [dependencies]
 git2 = "0.14"
-clap = "2.34"
+clap = "3.2"
